@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:gravity="center"
+    android:orientation="vertical">
+    <EditText
+        android:id="@+id/edtUniqueId"
+        android:layout_width="match_parent"
+        android:layout_marginHorizontal="16dp"
+        android:textSize="20sp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        android:paddingHorizontal="8dp"
+        android:background="@drawable/edittext_border"
+        android:layout_height="50dp"/>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="8dp"
+            android:textAlignment="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/button_bluetooth_browse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:text="Default printer"/>
+
+            <Button
+                android:id="@+id/connect_to_server"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start" />
+        </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="16dp"
+            android:clipToPadding="false"/>
+        <Button
+            android:id="@+id/btn_scroll_down"
+            android:layout_width="50dp"
+            android:visibility="invisible"
+            android:layout_gravity="bottom|center"
+            android:layout_height="50dp"/>
+    </FrameLayout>
+
+</LinearLayout>
