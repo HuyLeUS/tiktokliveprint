@@ -24,9 +24,7 @@ public abstract class AsyncEscPosPrint extends AsyncTask<AsyncEscPosPrinter, Int
     public final static int FINISH_BARCODE_ERROR = 6;
 
     protected final static int PROGRESS_CONNECTING = 1;
-    protected final static int PROGRESS_CONNECTED = 2;
     protected final static int PROGRESS_PRINTING = 3;
-    protected final static int PROGRESS_PRINTED = 4;
 
     protected ProgressDialog dialog;
     protected WeakReference<Context> weakContext;
@@ -77,7 +75,7 @@ public abstract class AsyncEscPosPrint extends AsyncTask<AsyncEscPosPrinter, Int
                 Thread.sleep(500);
             }
 
-            this.publishProgress(AsyncEscPosPrint.PROGRESS_PRINTED);
+            //this.publishProgress(AsyncEscPosPrint.PROGRESS_PRINTED);
 
         } catch (EscPosConnectionException e) {
             e.printStackTrace();
@@ -101,88 +99,13 @@ public abstract class AsyncEscPosPrint extends AsyncTask<AsyncEscPosPrinter, Int
         if (this.dialog == null) {
             Context context = weakContext.get();
 
-            if (context == null) {
-                return;
-            }
-
-            this.dialog = new ProgressDialog(context);
-            this.dialog.setTitle("Printing in progress...");
-            this.dialog.setMessage("...");
-            this.dialog.setProgressNumberFormat("%1d / %2d");
-            this.dialog.setCancelable(false);
-            this.dialog.setIndeterminate(false);
-            this.dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            this.dialog.show();
         }
     }
 
     protected void onProgressUpdate(Integer... progress) {
-        switch (progress[0]) {
-            case AsyncEscPosPrint.PROGRESS_CONNECTING:
-                this.dialog.setMessage("Connecting printer...");
-                break;
-            case AsyncEscPosPrint.PROGRESS_CONNECTED:
-                this.dialog.setMessage("Printer is connected...");
-                break;
-            case AsyncEscPosPrint.PROGRESS_PRINTING:
-                this.dialog.setMessage("Printer is printing...");
-                break;
-            case AsyncEscPosPrint.PROGRESS_PRINTED:
-                this.dialog.setMessage("Printer has finished...");
-                break;
-        }
-        this.dialog.setProgress(progress[0]);
-        this.dialog.setMax(4);
     }
 
     protected void onPostExecute(PrinterStatus result) {
-        this.dialog.dismiss();
-        this.dialog = null;
-
-        Context context = weakContext.get();
-
-        if (context == null) {
-            return;
-        }
-
-        switch (result.getPrinterStatus()) {
-            case AsyncEscPosPrint.FINISH_SUCCESS:
-                new AlertDialog.Builder(context)
-                        .setTitle("Success")
-                        .setMessage("Congratulation ! The texts are printed !")
-                        .show();
-                break;
-            case AsyncEscPosPrint.FINISH_NO_PRINTER:
-                new AlertDialog.Builder(context)
-                        .setTitle("No printer")
-                        .setMessage("The application can't find any printer connected.")
-                        .show();
-                break;
-            case AsyncEscPosPrint.FINISH_PRINTER_DISCONNECTED:
-                new AlertDialog.Builder(context)
-                    .setTitle("Broken connection")
-                    .setMessage("Unable to connect the printer.")
-                    .show();
-                break;
-            case AsyncEscPosPrint.FINISH_PARSER_ERROR:
-                new AlertDialog.Builder(context)
-                    .setTitle("Invalid formatted text")
-                    .setMessage("It seems to be an invalid syntax problem.")
-                    .show();
-                break;
-            case AsyncEscPosPrint.FINISH_ENCODING_ERROR:
-                new AlertDialog.Builder(context)
-                    .setTitle("Bad selected encoding")
-                    .setMessage("The selected encoding character returning an error.")
-                    .show();
-                break;
-            case AsyncEscPosPrint.FINISH_BARCODE_ERROR:
-                new AlertDialog.Builder(context)
-                    .setTitle("Invalid barcode")
-                    .setMessage("Data send to be converted to barcode or QR code seems to be invalid.")
-                    .show();
-                break;
-        }
         if(this.onPrintFinished != null) {
             if (result.getPrinterStatus() == AsyncEscPosPrint.FINISH_SUCCESS) {
                 this.onPrintFinished.onSuccess(result.getAsyncEscPosPrinter());

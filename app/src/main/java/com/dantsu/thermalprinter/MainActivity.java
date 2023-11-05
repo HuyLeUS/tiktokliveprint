@@ -5,9 +5,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
@@ -17,22 +15,21 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.ImageButton;
 
 import com.dantsu.escposprinter.connection.DeviceConnection;
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection;
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections;
-import com.dantsu.escposprinter.textparser.PrinterTextParserImg;
 import com.dantsu.thermalprinter.async.AsyncBluetoothEscPosPrint;
 import com.dantsu.thermalprinter.async.AsyncEscPosPrint;
 import com.dantsu.thermalprinter.async.AsyncEscPosPrinter;
 import com.dantsu.thermalprinter.data.Comment;
+import com.dantsu.thermalprinter.viewmodel.MainViewModel;
 import com.google.gson.Gson;
 
 
@@ -54,8 +51,13 @@ public class MainActivity extends AppCompatActivity {
     {
         try {
             mSocket = IO.socket("https://www.ttliveprint.com/");
-        } catch (URISyntaxException e) {}
+        } catch (URISyntaxException ignored) {}
     }
+
+
+
+    MainViewModel mainViewModel = new MainViewModel();
+
     private final List<Comment> comments = new ArrayList<>();
     private RecyclerView recyclerView;
 
@@ -65,30 +67,58 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnSelectDevice;
 
-    private  Button btnScrollDown;
-    private Button btnConnectServer;
+    private  ImageButton btnScrollDown;
+    private final Button btnConnectServer = findViewById(R.id.connect_to_server);
+    private CustomLinearLayoutManager linearLayoutManager;
 
     private ProgressDialog progressDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
         setContentView(R.layout.activity_main);
-        editText = (EditText)this.findViewById(R.id.edtUniqueId);
-        btnSelectDevice = (Button) this.findViewById(R.id.button_bluetooth_browse);
+        editText = this.findViewById(R.id.edtUniqueId);
+        btnSelectDevice = this.findViewById(R.id.button_bluetooth_browse);
+        btnScrollDown = this.findViewById(R.id.btn_scroll_down);
         btnSelectDevice.setOnClickListener(view -> browseBluetoothDevice());
-        btnConnectServer = (Button) findViewById(R.id.connect_to_server);
         btnConnectServer.setOnClickListener(view -> connectToServer());
-        btnScrollDown = (Button)this.findViewById(R.id.btn_scroll_down);
         btnScrollDown.setOnClickListener(view -> scrollDown());
         recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new CustomLinearLayoutManager(this));
+        linearLayoutManager = new CustomLinearLayoutManager(this);
+        recyclerView.setLayoutManager(linearLayoutManager);
         adapter = new ItemAdapter(comments);
         adapter.setOnItemClickListener(this::printBluetooth);
         recyclerView.setAdapter(adapter);
-
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Connecting...");
         progressDialog.setCancelable(false);
+
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (dy < 0) {
+                    // User is scrolling up
+                    mainViewModel.setIsOnBottom(false);
+                    btnScrollDown.setVisibility(View.VISIBLE); // Show the button
+                }else {
+                    if(linearLayoutManager.findLastVisibleItemPosition()== adapter.getItemCount()-1){
+                        mainViewModel.setIsOnBottom(true);
+                        btnScrollDown.setVisibility(View.INVISIBLE);
+                    }
+                }
+            }
+        });
+                mainViewModel.getIsOnBottom().observe(this, (Observer) o -> {
+                    if(o instanceof Boolean){
+                        if(o == Boolean.TRUE){
+                            btnScrollDown.setVisibility(View.INVISIBLE);
+                        } else{
+                            btnScrollDown.setVisibility(View.VISIBLE);
+                        }
+                    }
+                });
 
     }
     private void connectToServer(){
@@ -116,12 +146,17 @@ public class MainActivity extends AppCompatActivity {
             Comment comment = new Gson().fromJson(args[0].toString(),Comment.class);
             comments.add(comment);
             adapter.notifyItemInserted(comments.size()-1);
-            recyclerView.smoothScrollToPosition(comments.size()-1);
+            if(Boolean.TRUE.equals(mainViewModel.getIsOnBottom().getValue())){
+                recyclerView.smoothScrollToPosition(comments.size()-1);
+                btnScrollDown.setVisibility(View.INVISIBLE);
+            }
+
         } catch (Exception e){
             e.printStackTrace();
         }
     });
 
+    @SuppressLint("NotifyDataSetChanged")
     Emitter.Listener onStreamEnded = args -> runOnUiThread(()->{
         try{
             mSocket.emit("disconnect", "Hello" );
@@ -138,10 +173,10 @@ public class MainActivity extends AppCompatActivity {
     });
 
 
-    private Emitter.Listener onNewMessage = args -> runOnUiThread(() -> Log.d("Main Activity", Arrays.toString(args)));
+    private final Emitter.Listener onNewMessage = args -> runOnUiThread(() -> Log.d("Main Activity", Arrays.toString(args)));
 
 
-    private Emitter.Listener onDisconnected = args -> runOnUiThread(()->{
+    private final Emitter.Listener onDisconnected = args -> runOnUiThread(()->{
         btnSelectDevice.setClickable(true);
         btnConnectServer.setClickable(true);
         editText.setVisibility(View.VISIBLE);
@@ -151,7 +186,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void scrollDown(){
-
+        mainViewModel.onScrollDown();
+        recyclerView.smoothScrollToPosition(comments.size()-1);
     }
 
     public static void hideKeyboard(Activity activity) {
@@ -250,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             selectedDevice = bluetoothDevicesList[index];
                         }
-                        Button button = (Button) findViewById(R.id.button_bluetooth_browse);
+                        Button button = findViewById(R.id.button_bluetooth_browse);
                         button.setText(items[i1]);
                     }
                 );
@@ -264,7 +300,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void printBluetooth(int position) {
-        Toast.makeText(this,"item click:"+comments.get(position).nickname, Toast.LENGTH_LONG).show();
         this.checkBluetoothPermissions(() -> new AsyncBluetoothEscPosPrint(
             this,
             new AsyncEscPosPrint.OnPrintFinished() {
