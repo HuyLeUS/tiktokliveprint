@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnSelectDevice;
 
     private  ImageButton btnScrollDown;
-    private final Button btnConnectServer = findViewById(R.id.connect_to_server);
+    private Button btnConnectServer;
     private CustomLinearLayoutManager linearLayoutManager;
 
     private ProgressDialog progressDialog;
@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
         editText = this.findViewById(R.id.edtUniqueId);
         btnSelectDevice = this.findViewById(R.id.button_bluetooth_browse);
         btnScrollDown = this.findViewById(R.id.btn_scroll_down);
+        btnConnectServer = this.findViewById(R.id.connect_to_server);
         btnSelectDevice.setOnClickListener(view -> browseBluetoothDevice());
         btnConnectServer.setOnClickListener(view -> connectToServer());
         btnScrollDown.setOnClickListener(view -> scrollDown());
@@ -124,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
     private void connectToServer(){
         progressDialog.show();
         hideKeyboard(this);
-        String uniqueId = "huyentuixach";
+        String uniqueId = "huyentuixach1";
         if(!editText.getText().toString().equals("")){
             uniqueId = editText.getText().toString();
         }
