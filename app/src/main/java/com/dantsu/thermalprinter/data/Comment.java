@@ -2,6 +2,7 @@ package com.dantsu.thermalprinter.data;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Comment {
@@ -23,4 +24,6 @@ public class Comment {
     public String profilePictureUrl;
     @JsonProperty("userDetail")
     public UserDetail userDetail ;
+    public int countOrder;
 }
+

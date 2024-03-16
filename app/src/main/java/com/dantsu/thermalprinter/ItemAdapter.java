@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.dantsu.thermalprinter.data.Comment;
+import com.dantsu.thermalprinter.data.CommentData;
 import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
@@ -57,6 +58,9 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
         Comment currentItem = items.get(holder.getBindingAdapterPosition());
         holder.titleTextView.setText(currentItem.nickname);
         holder.descriptionTextView.setText(currentItem.comment);
+
+
+        holder.countOrder.setText(String.valueOf(currentItem.countOrder));
         Picasso.get()
                 .load(currentItem.profilePictureUrl)
                 .fit()
@@ -72,6 +76,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
         public TextView titleTextView;
         public TextView descriptionTextView;
 
+        public TextView countOrder;
         public CircleImageView avatar;
 
         public Button printButton;
@@ -80,6 +85,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
             super(itemView);
             titleTextView = itemView.findViewById(R.id.textViewTitle);
             descriptionTextView = itemView.findViewById(R.id.textViewDescription);
+            countOrder = itemView.findViewById(R.id.tvCountOrder);
             avatar = itemView.findViewById(R.id.avatarImageView);
             printButton = itemView.findViewById(R.id.trailingButton);
             printButton.setOnClickListener(view -> {

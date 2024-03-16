@@ -21,6 +21,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import com.dantsu.escposprinter.connection.DeviceConnection;
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection;
@@ -38,7 +39,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
@@ -59,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
     MainViewModel mainViewModel = new MainViewModel();
 
     private final List<Comment> comments = new ArrayList<>();
+
+    private Map<String,Integer> mapCountOrder = new HashMap<String,Integer>();
     private RecyclerView recyclerView;
 
     private ItemAdapter adapter;
@@ -125,18 +130,26 @@ public class MainActivity extends AppCompatActivity {
     private void connectToServer(){
         progressDialog.show();
         hideKeyboard(this);
-        String uniqueId = "huyentuixach1";
+        String uniqueId = "huyentuixach2";
         if(!editText.getText().toString().equals("")){
             uniqueId = editText.getText().toString();
         }
 
         mSocket.connect();
+
         mSocket.on("connect",onNewMessage);
         mSocket.emit("setUniqueId",uniqueId);
         mSocket.on("chat",onChat);
         mSocket.on("disconnect", onDisconnected);
         mSocket.on("streamEnd", onStreamEnded);
+        mSocket.on("tiktokDisconnected",onTikTokDisconnected);
     }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+    }
+
     Emitter.Listener onChat = args -> runOnUiThread(() -> {
         progressDialog.hide();
         try{
@@ -145,16 +158,26 @@ public class MainActivity extends AppCompatActivity {
             btnConnectServer.setClickable(false);
             btnSelectDevice.setClickable(false);
             Comment comment = new Gson().fromJson(args[0].toString(),Comment.class);
+            if(mapCountOrder.get(comment.uniqueId)!=null){
+                comment.countOrder = mapCountOrder.get(comment.uniqueId);
+            }
+            else comment.countOrder = 0;
             comments.add(comment);
             adapter.notifyItemInserted(comments.size()-1);
             if(Boolean.TRUE.equals(mainViewModel.getIsOnBottom().getValue())){
                 recyclerView.smoothScrollToPosition(comments.size()-1);
                 btnScrollDown.setVisibility(View.INVISIBLE);
             }
-
         } catch (Exception e){
             e.printStackTrace();
         }
+    });
+
+    Emitter.Listener onTikTokDisconnected = args -> runOnUiThread(()->{
+        progressDialog.hide();
+        mSocket.disconnect();
+        mSocket.close();
+        Toast.makeText(this,"Too many request",Toast.LENGTH_SHORT).show();
     });
 
     @SuppressLint("NotifyDataSetChanged")
@@ -174,7 +197,10 @@ public class MainActivity extends AppCompatActivity {
     });
 
 
-    private final Emitter.Listener onNewMessage = args -> runOnUiThread(() -> Log.d("Main Activity", Arrays.toString(args)));
+    private final Emitter.Listener onNewMessage = args -> runOnUiThread(() ->{
+        Log.d("Main Activity", Arrays.toString(args));
+        System.out.println("Connecting....");
+    });
 
 
     private final Emitter.Listener onDisconnected = args -> runOnUiThread(()->{
@@ -301,6 +327,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void printBluetooth(int position) {
+        increaseCountOrder(position);
         this.checkBluetoothPermissions(() -> new AsyncBluetoothEscPosPrint(
             this,
             new AsyncEscPosPrint.OnPrintFinished() {
@@ -318,6 +345,14 @@ public class MainActivity extends AppCompatActivity {
             .execute(this.getAsyncEscPosPrinter(selectedDevice, position)));
     }
 
+    private void increaseCountOrder(int position){
+        Comment comment = comments.get(position);
+        Integer currentCountOrder = mapCountOrder.get(comment.uniqueId);
+        if(currentCountOrder==null) currentCountOrder=0;
+        mapCountOrder.put(comment.uniqueId,currentCountOrder+1);
+        comment.countOrder = mapCountOrder.get(comment.uniqueId);
+        adapter.notifyItemChanged(position);
+    }
 
     /**
      * Asynchronous printing
